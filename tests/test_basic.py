@@ -101,3 +101,57 @@ def test_noop_tracer_start_as_current_span():
     tracer = NoOpTracer()
     with tracer.start_as_current_span("direct") as span:
         assert isinstance(span, NoOpSpan)
+
+
+def test_set_span_error_noop():
+    from vestigio._spans import set_span_error
+
+    span = NoOpSpan()
+    set_span_error(span, RuntimeError("boom"))
+
+
+def test_set_span_ok_noop():
+    from vestigio._spans import set_span_ok
+
+    span = NoOpSpan()
+    set_span_ok(span)
+
+
+def test_set_span_error_no_otel(monkeypatch):
+    import builtins
+    from unittest.mock import MagicMock
+
+    from vestigio._spans import set_span_error
+
+    real_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "opentelemetry.trace":
+            raise ImportError("no otel")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    span = MagicMock()
+    set_span_error(span, RuntimeError("fail"))
+    span.record_exception.assert_called_once()
+    span.set_attribute.assert_any_call("otel.status_code", "ERROR")
+    span.set_attribute.assert_any_call("error.message", "fail")
+
+
+def test_set_span_ok_no_otel(monkeypatch):
+    import builtins
+    from unittest.mock import MagicMock
+
+    from vestigio._spans import set_span_ok
+
+    real_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "opentelemetry.trace":
+            raise ImportError("no otel")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    span = MagicMock()
+    set_span_ok(span)
+    span.set_attribute.assert_called_once_with("otel.status_code", "OK")

@@ -165,3 +165,40 @@ def set_agent_output(span: Any, output: str) -> None:
     if isinstance(span, NoOpSpan) or not output:
         return
     span.set_attribute(OpenInference.OUTPUT_VALUE, output)
+
+
+def set_span_error(span: Any, exception: BaseException) -> None:
+    """Record an exception and set ERROR status on a span.
+
+    Args:
+        span: The span to mark as errored.
+        exception: The exception that occurred.
+    """
+    if isinstance(span, NoOpSpan):
+        return
+
+    span.record_exception(exception)
+    try:
+        from opentelemetry.trace import StatusCode
+
+        span.set_status(StatusCode.ERROR, str(exception))
+    except ImportError:
+        span.set_attribute("otel.status_code", "ERROR")
+        span.set_attribute("error.message", str(exception))
+
+
+def set_span_ok(span: Any) -> None:
+    """Set OK status on a span.
+
+    Args:
+        span: The span to mark as successful.
+    """
+    if isinstance(span, NoOpSpan):
+        return
+
+    try:
+        from opentelemetry.trace import StatusCode
+
+        span.set_status(StatusCode.OK)
+    except ImportError:
+        span.set_attribute("otel.status_code", "OK")

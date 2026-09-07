@@ -19,7 +19,7 @@ __version__ = "0.1.0"
 
 from vestigio._config import VestigioConfig
 from vestigio._provider import init_telemetry, shutdown_telemetry
-from vestigio._spans import agent_span, llm_span, tool_span
+from vestigio._spans import agent_span, llm_span, set_span_error, set_span_ok, tool_span
 
 __all__ = [
     "VestigioConfig",
@@ -27,5 +27,7 @@ __all__ = [
     "init_telemetry",
     "llm_span",
     "shutdown_telemetry",
+    "set_span_error",
+    "set_span_ok",
     "tool_span",
 ]
