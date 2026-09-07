@@ -155,3 +155,15 @@ def test_set_span_ok_no_otel(monkeypatch):
     span = MagicMock()
     set_span_ok(span)
     span.set_attribute.assert_called_once_with("otel.status_code", "OK")
+
+
+def test_agent_span_with_session_metadata_noop():
+    tracer = NoOpTracer()
+    with agent_span(
+        tracer,
+        task="test",
+        session_id="sess-123",
+        user_id="user-456",
+        metadata={"env": "dev", "version": "1.0"},
+    ) as span:
+        assert isinstance(span, NoOpSpan)
