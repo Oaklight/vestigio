@@ -322,3 +322,57 @@ def test_set_span_error_in_agent_span(otel_setup):
     exc_attrs = dict(exc_events[0].attributes)
     assert exc_attrs["exception.type"] == "RuntimeError"
     assert exc_attrs["exception.message"] == "tool call failed"
+
+
+def test_agent_span_session_and_user(otel_setup):
+    tracer, exporter = otel_setup
+
+    with agent_span(tracer, task="test", session_id="sess-abc", user_id="user-xyz"):
+        pass
+
+    spans = exporter.get_finished_spans()
+    attrs = dict(spans[0].attributes)
+    assert attrs["session.id"] == "sess-abc"
+    assert attrs["gen_ai.conversation.id"] == "sess-abc"
+    assert attrs["user.id"] == "user-xyz"
+
+
+def test_agent_span_metadata(otel_setup):
+    tracer, exporter = otel_setup
+
+    with agent_span(tracer, task="test", metadata={"env": "prod", "region": "us-east"}):
+        pass
+
+    spans = exporter.get_finished_spans()
+    attrs = dict(spans[0].attributes)
+    assert attrs["metadata.env"] == "prod"
+    assert attrs["metadata.region"] == "us-east"
+
+
+def test_agent_span_all_params(otel_setup):
+    from vestigio._spans import set_agent_output
+
+    tracer, exporter = otel_setup
+
+    with agent_span(
+        tracer,
+        task="summarize this",
+        agent_name="talpa",
+        model="claude-4",
+        session_id="sess-001",
+        user_id="user-pding",
+        metadata={"source": "cli"},
+    ) as span:
+        set_agent_output(span, "done")
+
+    spans = exporter.get_finished_spans()
+    attrs = dict(spans[0].attributes)
+    assert attrs["openinference.span.kind"] == "AGENT"
+    assert attrs["agent.name"] == "talpa"
+    assert attrs["input.value"] == "summarize this"
+    assert attrs["llm.model_name"] == "claude-4"
+    assert attrs["session.id"] == "sess-001"
+    assert attrs["gen_ai.conversation.id"] == "sess-001"
+    assert attrs["user.id"] == "user-pding"
+    assert attrs["metadata.source"] == "cli"
+    assert attrs["output.value"] == "done"

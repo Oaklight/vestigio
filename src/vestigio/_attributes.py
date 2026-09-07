@@ -69,3 +69,6 @@ class GenAI:
 
     # Agent
     AGENT_NAME = "gen_ai.agent.name"
+
+    # Session
+    CONVERSATION_ID = "gen_ai.conversation.id"

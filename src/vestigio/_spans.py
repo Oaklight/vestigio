@@ -24,6 +24,9 @@ def agent_span(
     task: str = "",
     agent_name: str = "agent",
     model: str = "",
+    session_id: str = "",
+    user_id: str = "",
+    metadata: dict[str, str] | None = None,
 ) -> Iterator[Any]:
     """Create an AGENT span (typically the root span for one chat turn).
 
@@ -32,6 +35,9 @@ def agent_span(
         task: User input / task description. Set as input.value.
         agent_name: Agent identifier.
         model: Model name, if known at start time.
+        session_id: Session/conversation identifier for trace grouping.
+        user_id: User identifier.
+        metadata: Arbitrary key-value pairs set as metadata.{key} attributes.
 
     Yields:
         The span object. Caller can set additional attributes or
@@ -50,6 +56,14 @@ def agent_span(
         if model:
             span.set_attribute(OpenInference.LLM_MODEL_NAME, model)
             span.set_attribute(GenAI.REQUEST_MODEL, model)
+        if session_id:
+            span.set_attribute(OpenInference.SESSION_ID, session_id)
+            span.set_attribute(GenAI.CONVERSATION_ID, session_id)
+        if user_id:
+            span.set_attribute(OpenInference.USER_ID, user_id)
+        if metadata:
+            for key, value in metadata.items():
+                span.set_attribute(f"metadata.{key}", value)
         yield span
 
 
