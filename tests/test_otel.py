@@ -2,8 +2,8 @@
 
 import pytest
 
-from vestigio import VestigioConfig, init_telemetry, agent_span, llm_span, tool_span
-from vestigio._spans import set_llm_usage, set_agent_output
+from vestigio import VestigioConfig, agent_span, init_telemetry, llm_span, tool_span
+from vestigio._spans import set_agent_output, set_llm_usage
 
 pytest.importorskip("opentelemetry.sdk")
 
@@ -57,11 +57,14 @@ def test_llm_span_with_usage(otel_setup):
     tracer, exporter = otel_setup
 
     with llm_span(tracer, model="claude-4", provider="anthropic", iteration=2) as span:
-        set_llm_usage(span, {
-            "prompt_tokens": 100,
-            "completion_tokens": 50,
-            "total_tokens": 150,
-        })
+        set_llm_usage(
+            span,
+            {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150,
+            },
+        )
 
     spans = exporter.get_finished_spans()
     assert len(spans) == 1
@@ -82,7 +85,7 @@ def test_llm_span_with_usage(otel_setup):
 def test_tool_span_single(otel_setup):
     tracer, exporter = otel_setup
 
-    with tool_span(tracer, tool_name="get_weather", iteration=1) as span:
+    with tool_span(tracer, tool_name="get_weather", iteration=1):
         pass
 
     spans = exporter.get_finished_spans()
@@ -137,5 +140,150 @@ def test_init_telemetry_with_console(monkeypatch):
     assert not isinstance(tracer, type(None))
 
     from opentelemetry.sdk.trace import TracerProvider
+
     provider = trace.get_tracer_provider()
     assert isinstance(provider, TracerProvider)
+
+
+def test_init_telemetry_default_config(monkeypatch):
+    monkeypatch.delenv("VESTIGIO_ENABLED", raising=False)
+    monkeypatch.delenv("VESTIGIO_ENDPOINT", raising=False)
+    monkeypatch.delenv("VESTIGIO_CONSOLE", raising=False)
+    tracer = init_telemetry()
+    from vestigio._noop import NoOpTracer
+
+    assert isinstance(tracer, NoOpTracer)
+
+
+def test_check_otel_caching():
+    import vestigio._provider as prov
+
+    old = prov._HAS_OTEL
+    try:
+        prov._HAS_OTEL = None
+        assert prov._check_otel() is True
+        assert prov._HAS_OTEL is True
+        assert prov._check_otel() is True
+    finally:
+        prov._HAS_OTEL = old
+
+
+def test_init_telemetry_otel_not_installed(monkeypatch):
+    import vestigio._provider as prov
+
+    old = prov._HAS_OTEL
+    try:
+        monkeypatch.setattr(prov, "_check_otel", lambda: False)
+        config = VestigioConfig(enabled=True)
+        tracer = init_telemetry(config=config)
+        from vestigio._noop import NoOpTracer
+
+        assert isinstance(tracer, NoOpTracer)
+    finally:
+        prov._HAS_OTEL = old
+
+
+def test_init_telemetry_otlp_endpoint():
+    config = VestigioConfig(
+        enabled=True,
+        endpoint="http://test:4317",
+        console=False,
+    )
+    init_telemetry(config=config)
+
+    from opentelemetry.sdk.trace import TracerProvider as TP
+
+    provider = trace.get_tracer_provider()
+    assert isinstance(provider, TP)
+
+
+def test_init_telemetry_otlp_import_error_with_console(monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if "otlp" in name:
+            raise ImportError("no otlp")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    config = VestigioConfig(enabled=True, endpoint="http://x:4317", console=True)
+    tracer = init_telemetry(config=config)
+    assert tracer is not None
+
+
+def test_init_telemetry_otlp_import_error_fallback(monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if "otlp" in name:
+            raise ImportError("no otlp")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    config = VestigioConfig(enabled=True, endpoint="http://x:4317", console=False)
+    tracer = init_telemetry(config=config)
+    assert tracer is not None
+
+
+def test_shutdown_telemetry():
+    from vestigio._provider import shutdown_telemetry
+
+    config = VestigioConfig(enabled=True, console=True, endpoint="")
+    init_telemetry(config=config)
+    shutdown_telemetry()
+
+
+def test_shutdown_telemetry_no_otel(monkeypatch):
+    import vestigio._provider as prov
+    from vestigio._provider import shutdown_telemetry
+
+    monkeypatch.setattr(prov, "_check_otel", lambda: False)
+    shutdown_telemetry()
+
+
+def test_check_otel_import_failure(monkeypatch):
+    import builtins
+
+    import vestigio._provider as prov
+
+    real_import = builtins.__import__
+    old = prov._HAS_OTEL
+
+    def mock_import(name, *args, **kwargs):
+        if name == "opentelemetry.sdk":
+            raise ImportError("no sdk")
+        return real_import(name, *args, **kwargs)
+
+    try:
+        prov._HAS_OTEL = None
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+        assert prov._check_otel() is False
+        assert prov._HAS_OTEL is False
+    finally:
+        prov._HAS_OTEL = old
+
+
+def test_init_telemetry_otlp_success(monkeypatch):
+    import builtins
+    from unittest.mock import MagicMock
+
+    real_import = builtins.__import__
+
+    mock_exporter_cls = MagicMock()
+
+    def mock_import(name, *args, **kwargs):
+        if "otlp" in name:
+            mod = MagicMock()
+            mod.OTLPSpanExporter = mock_exporter_cls
+            return mod
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    config = VestigioConfig(enabled=True, endpoint="http://collector:4317", console=False)
+    tracer = init_telemetry(config=config)
+    assert tracer is not None
+    mock_exporter_cls.assert_called_once_with(endpoint="http://collector:4317")

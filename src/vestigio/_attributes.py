@@ -12,6 +12,7 @@ References:
 
 # ── OpenInference ──
 
+
 class OpenInference:
     """OpenInference semantic convention attribute keys."""
 

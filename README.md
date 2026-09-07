@@ -52,6 +52,7 @@ with agent_span(tracer, task="what's the weather?", model="gpt-4") as root:
 Consumers can use a custom env var prefix:
 ```python
 from vestigio import VestigioConfig, init_telemetry
+
 config = VestigioConfig.from_env(prefix="TALPA_OTEL")
 tracer = init_telemetry(config=config)
 ```

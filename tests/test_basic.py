@@ -1,13 +1,14 @@
 """Basic tests for vestigio — no OTEL SDK required."""
 
-from vestigio import VestigioConfig, init_telemetry, agent_span, llm_span, tool_span
-from vestigio._noop import NoOpTracer, NoOpSpan
-from vestigio._spans import set_llm_usage, set_agent_output
+from vestigio import VestigioConfig, agent_span, init_telemetry, llm_span, tool_span
+from vestigio._noop import NoOpSpan, NoOpTracer
+from vestigio._spans import set_agent_output, set_llm_usage
 
 
 def test_import():
     """Package is importable."""
     import vestigio
+
     assert vestigio.__version__ == "0.1.0"
 
 
@@ -67,4 +68,36 @@ def test_set_agent_output_noop():
 def test_noop_batch_tool_span():
     tracer = NoOpTracer()
     with tool_span(tracer, tool_names=["a", "b", "c"], iteration=2) as span:
+        assert isinstance(span, NoOpSpan)
+
+
+def test_noop_span_full_api():
+    span = NoOpSpan()
+    span.set_status("OK")
+    span.set_status("ERROR", description="boom")
+    span.record_exception(RuntimeError("test"))
+    span.add_event("evt", attributes={"k": "v"})
+    span.end()
+    with span:
+        pass
+
+
+def test_noop_tracer_start_span():
+    tracer = NoOpTracer()
+    span = tracer.start_span("manual")
+    assert isinstance(span, NoOpSpan)
+
+
+def test_get_noop_tracer_singleton():
+    from vestigio._noop import get_noop_tracer
+
+    t1 = get_noop_tracer()
+    t2 = get_noop_tracer()
+    assert t1 is t2
+    assert isinstance(t1, NoOpTracer)
+
+
+def test_noop_tracer_start_as_current_span():
+    tracer = NoOpTracer()
+    with tracer.start_as_current_span("direct") as span:
         assert isinstance(span, NoOpSpan)

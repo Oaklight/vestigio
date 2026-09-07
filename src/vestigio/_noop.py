@@ -39,9 +39,7 @@ class NoOpTracer:
     """Tracer stub that returns NoOpSpans."""
 
     @contextmanager
-    def start_as_current_span(
-        self, name: str, **kwargs: Any
-    ) -> Iterator[NoOpSpan]:
+    def start_as_current_span(self, name: str, **kwargs: Any) -> Iterator[NoOpSpan]:
         yield NoOpSpan()
 
     def start_span(self, name: str, **kwargs: Any) -> NoOpSpan:
