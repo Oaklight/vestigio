@@ -10,7 +10,7 @@ import logging
 from typing import Any
 
 from vestigio._config import VestigioConfig
-from vestigio._noop import NoOpTracer, get_noop_tracer
+from vestigio._noop import get_noop_tracer
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,7 @@ def init_telemetry(
 
     if not _check_otel():
         logger.warning(
-            "OTEL SDK not installed — telemetry disabled. "
-            "Install with: pip install vestigio[otel]"
+            "OTEL SDK not installed — telemetry disabled. Install with: pip install vestigio[otel]"
         )
         return get_noop_tracer()
 
@@ -75,7 +74,7 @@ def init_telemetry(
 
     if config.endpoint:
         try:
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # ty: ignore[unresolved-import]
                 OTLPSpanExporter,
             )
 
@@ -88,9 +87,7 @@ def init_telemetry(
                     "OTLP exporter not available — install vestigio[otlp]. "
                     "Falling back to console exporter."
                 )
-                provider.add_span_processor(
-                    BatchSpanProcessor(ConsoleSpanExporter())
-                )
+                provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
     trace.set_tracer_provider(provider)
     tracer = trace.get_tracer("vestigio", __import__("vestigio").__version__)
@@ -107,5 +104,5 @@ def shutdown_telemetry() -> None:
 
     provider = trace.get_tracer_provider()
     if hasattr(provider, "shutdown"):
-        provider.shutdown()
+        provider.shutdown()  # ty: ignore[call-non-callable]
         logger.debug("Tracer provider shut down")

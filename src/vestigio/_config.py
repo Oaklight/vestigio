@@ -36,6 +36,7 @@ class VestigioConfig:
             prefix: Env var prefix. Consumers can override to use
                 their own namespace (e.g. "TALPA_OTEL").
         """
+
         def _is_truthy(key: str) -> bool:
             return os.environ.get(key, "").lower() in ("1", "true", "yes")
 
