@@ -267,3 +267,58 @@ def test_init_telemetry_otlp_success(monkeypatch):
     tracer = init_telemetry(config=config)
     assert tracer is not None
     mock_exporter_cls.assert_called_once_with(endpoint="http://collector:4317")
+
+
+def test_set_span_error(otel_setup):
+    from vestigio._spans import set_span_error
+
+    tracer, exporter = otel_setup
+
+    with agent_span(tracer, task="fail") as span:
+        err = ValueError("something broke")
+        set_span_error(span, err)
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    s = spans[0]
+    assert s.status.status_code.name == "ERROR"
+    assert "something broke" in s.status.description
+    events = s.events
+    assert any(e.name == "exception" for e in events)
+
+
+def test_set_span_ok(otel_setup):
+    from vestigio._spans import set_span_ok
+
+    tracer, exporter = otel_setup
+
+    with agent_span(tracer, task="succeed") as span:
+        set_span_ok(span)
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    assert spans[0].status.status_code.name == "OK"
+
+
+def test_set_span_error_in_agent_span(otel_setup):
+    from vestigio._spans import set_span_error
+
+    tracer, exporter = otel_setup
+
+    with agent_span(tracer, task="will fail", model="gpt-4") as span:
+        try:
+            raise RuntimeError("tool call failed")
+        except RuntimeError as exc:
+            set_span_error(span, exc)
+
+    spans = exporter.get_finished_spans()
+    s = spans[0]
+    attrs = dict(s.attributes)
+    assert attrs["openinference.span.kind"] == "AGENT"
+    assert s.status.status_code.name == "ERROR"
+    assert "tool call failed" in s.status.description
+    exc_events = [e for e in s.events if e.name == "exception"]
+    assert len(exc_events) == 1
+    exc_attrs = dict(exc_events[0].attributes)
+    assert exc_attrs["exception.type"] == "RuntimeError"
+    assert exc_attrs["exception.message"] == "tool call failed"
