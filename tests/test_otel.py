@@ -1,5 +1,7 @@
 """Tests with real OTEL SDK — verifies span creation and attributes."""
 
+import builtins
+
 import pytest
 
 from vestigio import VestigioConfig, agent_span, init_telemetry, llm_span, tool_span
@@ -31,6 +33,19 @@ def otel_setup():
     tracer = trace.get_tracer("test")
     yield tracer, exporter
     provider.shutdown()
+
+
+@pytest.fixture()
+def _mock_otlp_import_error(monkeypatch):
+    """Mock OTLP exporter import to raise ImportError."""
+    real_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if "otlp" in name:
+            raise ImportError("no otlp")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
 
 
 def test_agent_span_attributes(otel_setup):
@@ -155,32 +170,24 @@ def test_init_telemetry_default_config(monkeypatch):
     assert isinstance(tracer, NoOpTracer)
 
 
-def test_check_otel_caching():
+def test_check_otel_caching(monkeypatch):
     import vestigio._provider as prov
 
-    old = prov._HAS_OTEL
-    try:
-        prov._HAS_OTEL = None
-        assert prov._check_otel() is True
-        assert prov._HAS_OTEL is True
-        assert prov._check_otel() is True
-    finally:
-        prov._HAS_OTEL = old
+    monkeypatch.setattr(prov, "_HAS_OTEL", None)
+    assert prov._check_otel() is True
+    assert prov._HAS_OTEL is True
+    assert prov._check_otel() is True
 
 
 def test_init_telemetry_otel_not_installed(monkeypatch):
     import vestigio._provider as prov
 
-    old = prov._HAS_OTEL
-    try:
-        monkeypatch.setattr(prov, "_check_otel", lambda: False)
-        config = VestigioConfig(enabled=True)
-        tracer = init_telemetry(config=config)
-        from vestigio._noop import NoOpTracer
+    monkeypatch.setattr(prov, "_check_otel", lambda: False)
+    config = VestigioConfig(enabled=True)
+    tracer = init_telemetry(config=config)
+    from vestigio._noop import NoOpTracer
 
-        assert isinstance(tracer, NoOpTracer)
-    finally:
-        prov._HAS_OTEL = old
+    assert isinstance(tracer, NoOpTracer)
 
 
 def test_init_telemetry_otlp_endpoint():
@@ -197,33 +204,13 @@ def test_init_telemetry_otlp_endpoint():
     assert isinstance(provider, TP)
 
 
-def test_init_telemetry_otlp_import_error_with_console(monkeypatch):
-    import builtins
-
-    real_import = builtins.__import__
-
-    def mock_import(name, *args, **kwargs):
-        if "otlp" in name:
-            raise ImportError("no otlp")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", mock_import)
+def test_init_telemetry_otlp_import_error_with_console(_mock_otlp_import_error):
     config = VestigioConfig(enabled=True, endpoint="http://x:4317", console=True)
     tracer = init_telemetry(config=config)
     assert tracer is not None
 
 
-def test_init_telemetry_otlp_import_error_fallback(monkeypatch):
-    import builtins
-
-    real_import = builtins.__import__
-
-    def mock_import(name, *args, **kwargs):
-        if "otlp" in name:
-            raise ImportError("no otlp")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", mock_import)
+def test_init_telemetry_otlp_import_error_fallback(_mock_otlp_import_error):
     config = VestigioConfig(enabled=True, endpoint="http://x:4317", console=False)
     tracer = init_telemetry(config=config)
     assert tracer is not None
@@ -246,29 +233,22 @@ def test_shutdown_telemetry_no_otel(monkeypatch):
 
 
 def test_check_otel_import_failure(monkeypatch):
-    import builtins
-
     import vestigio._provider as prov
 
     real_import = builtins.__import__
-    old = prov._HAS_OTEL
 
     def mock_import(name, *args, **kwargs):
         if name == "opentelemetry.sdk":
             raise ImportError("no sdk")
         return real_import(name, *args, **kwargs)
 
-    try:
-        prov._HAS_OTEL = None
-        monkeypatch.setattr(builtins, "__import__", mock_import)
-        assert prov._check_otel() is False
-        assert prov._HAS_OTEL is False
-    finally:
-        prov._HAS_OTEL = old
+    monkeypatch.setattr(prov, "_HAS_OTEL", None)
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    assert prov._check_otel() is False
+    assert prov._HAS_OTEL is False
 
 
 def test_init_telemetry_otlp_success(monkeypatch):
-    import builtins
     from unittest.mock import MagicMock
 
     real_import = builtins.__import__
