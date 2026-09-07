@@ -26,8 +26,8 @@ __all__ = [
     "agent_span",
     "init_telemetry",
     "llm_span",
-    "shutdown_telemetry",
     "set_span_error",
     "set_span_ok",
+    "shutdown_telemetry",
     "tool_span",
 ]
