@@ -4,9 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g. 0.2.0)"
+        description: "Version to release (e.g. 0.2.0, without v prefix)"
         required: true
         type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   prepare:
@@ -15,21 +19,47 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Verify version matches package
+      - name: Validate version input
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          PKG_VER=$(python -c "import re; m=re.search(r'__version__\s*=\s*\"(.+?)\"', open('src/vestigio/__init__.py').read()); print(m.group(1))")
+          if [[ "$VERSION" =~ ^v ]]; then
+            echo "::error::Version should not include 'v' prefix (e.g. 0.2.0, not v0.2.0)"
+            exit 1
+          fi
+
+      - name: Check tag does not exist
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v${VERSION}$"; then
+            echo "::error::Tag v${VERSION} already exists"
+            exit 1
+          fi
+
+      - name: Verify version matches package
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          PKG_VER=$(python -c "import re; m=re.search(r\"__version__\s*=\s*[\\\"'](.+?)[\\\"']\", open('src/vestigio/__init__.py').read()); print(m.group(1) if m else '')")
           echo "Package version: $PKG_VER"
-          echo "Requested version: ${{ inputs.version }}"
-          [ "$PKG_VER" = "${{ inputs.version }}" ] || \
-            (echo "::error::Version mismatch: __init__.py has $PKG_VER but release requested ${{ inputs.version }}"; exit 1)
+          echo "Requested version: $VERSION"
+          if [ -z "$PKG_VER" ]; then
+            echo "::error::Could not extract __version__ from __init__.py"
+            exit 1
+          fi
+          [ "$PKG_VER" = "$VERSION" ] || \
+            (echo "::error::Version mismatch: __init__.py has $PKG_VER but release requested $VERSION"; exit 1)
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install ".[dev]"
 
       - name: Lint (ruff + ty)
         uses: pre-commit/action@v3.0.1
@@ -38,11 +68,13 @@ jobs:
         run: pytest tests/ -v --cov=vestigio --cov-fail-under=100
 
       - name: Create and push git tag
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ inputs.version }}"
-          git push origin "v${{ inputs.version }}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
   build-publish:
     needs: prepare
@@ -88,8 +120,9 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
         run: |
-          gh release create "v${{ inputs.version }}" dist/* \
+          gh release create "v${VERSION}" dist/* \
             --repo "${{ github.repository }}" \
-            --title "v${{ inputs.version }}" \
+            --title "v${VERSION}" \
             --generate-notes
