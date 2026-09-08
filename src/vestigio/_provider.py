@@ -74,7 +74,7 @@ def init_telemetry(
 
     if config.endpoint:
         try:
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # ty: ignore[unresolved-import]
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
                 OTLPSpanExporter,
             )
 
@@ -104,5 +104,5 @@ def shutdown_telemetry() -> None:
 
     provider = trace.get_tracer_provider()
     if hasattr(provider, "shutdown"):
-        provider.shutdown()  # ty: ignore[call-non-callable]
+        provider.shutdown()
         logger.debug("Tracer provider shut down")

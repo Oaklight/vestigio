@@ -18,14 +18,26 @@ Usage:
 __version__ = "0.1.0"
 
 from vestigio._config import VestigioConfig
+from vestigio._noop import NoOpTracer
 from vestigio._provider import init_telemetry, shutdown_telemetry
-from vestigio._spans import agent_span, llm_span, set_span_error, set_span_ok, tool_span
+from vestigio._spans import (
+    agent_span,
+    llm_span,
+    set_agent_output,
+    set_llm_usage,
+    set_span_error,
+    set_span_ok,
+    tool_span,
+)
 
 __all__ = [
+    "NoOpTracer",
     "VestigioConfig",
     "agent_span",
     "init_telemetry",
     "llm_span",
+    "set_agent_output",
+    "set_llm_usage",
     "set_span_error",
     "set_span_ok",
     "shutdown_telemetry",

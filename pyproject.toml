@@ -64,3 +64,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+
+[tool.ty.rules]
+# opentelemetry is an optional dependency — deferred imports are intentional
+unresolved-import = "ignore"
