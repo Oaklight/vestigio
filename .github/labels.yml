@@ -1,0 +1,65 @@
+# Base label taxonomy — shared across all projects.
+# See dev-playbook/repo-setup/01-github-labels.md for rationale.
+
+# === Type labels ===
+- name: bug
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: enhancement
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: documentation
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: refactor
+  color: "f59e0b"
+  description: "Code refactoring, no behavior change"
+
+- name: performance
+  color: "ff6600"
+  description: "Performance optimization"
+
+- name: architecture
+  color: "5319e7"
+  description: "Architectural improvements"
+
+- name: research
+  color: "d4c5f9"
+  description: "Investigation, specification research"
+
+- name: security
+  color: "e11d48"
+  description: "Security vulnerability"
+
+- name: discussion
+  color: "c084fc"
+  description: "Design discussion, RFC"
+
+# === Priority labels ===
+- name: "priority:critical"
+  color: "b91c1c"
+  description: "Security/data-loss, fix immediately"
+
+- name: "priority:high"
+  color: "dc2626"
+  description: "Blocks other work"
+
+- name: "priority:medium"
+  color: "f97316"
+  description: "Should fix soon"
+
+- name: "priority:low"
+  color: "fca5a5"
+  description: "Nice to have"
+
+# === Area labels (vestigio-specific) ===
+- name: "area:core"
+  color: "0891b2"
+  description: "Core library — config, provider, spans, noop stubs"
+
+- name: "area:infra"
+  color: "0075ca"
+  description: "CI, build, packaging, release"
