@@ -2,6 +2,11 @@
 
 [English Version](README_en.md) | 中文版
 
+[![PyPI version](https://img.shields.io/pypi/v/vestigio?color=olive)](https://pypi.org/project/vestigio/)
+[![GitHub release](https://img.shields.io/github/v/release/Oaklight/vestigio?color=olive)](https://github.com/Oaklight/vestigio/releases/latest)
+[![CI](https://github.com/Oaklight/vestigio/actions/workflows/ci.yml/badge.svg)](https://github.com/Oaklight/vestigio/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-olive.svg)](https://opensource.org/licenses/MIT)
+
 轻量 OTEL 封装，用于 Agent/LLM 可观测性。
 
 源自拉丁语 *vestigium*——"踪迹、足迹"。Vestigio 使用 [OpenInference](https://arize-ai.github.io/openinference/spec/) 和 [OTel GenAI](https://opentelemetry.io/docs/specs/semconv/gen-ai/) 语义约定，提供面向 Agent 的原生插桩。

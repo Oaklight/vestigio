@@ -2,6 +2,11 @@
 
 English Version | [中文版](README_zh.md)
 
+[![PyPI version](https://img.shields.io/pypi/v/vestigio?color=olive)](https://pypi.org/project/vestigio/)
+[![GitHub release](https://img.shields.io/github/v/release/Oaklight/vestigio?color=olive)](https://github.com/Oaklight/vestigio/releases/latest)
+[![CI](https://github.com/Oaklight/vestigio/actions/workflows/ci.yml/badge.svg)](https://github.com/Oaklight/vestigio/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-olive.svg)](https://opensource.org/licenses/MIT)
+
 Thin OTEL wrapper for agent/LLM observability.
 
 From Latin *vestigium* — "trace, footprint." Vestigio provides agent-native instrumentation using [OpenInference](https://arize-ai.github.io/openinference/spec/) and [OTel GenAI](https://opentelemetry.io/docs/specs/semconv/gen-ai/) semantic conventions.
