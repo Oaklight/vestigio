@@ -1,65 +1,65 @@
-# Base label taxonomy — shared across all projects.
-# See dev-playbook/repo-setup/01-github-labels.md for rationale.
+# Label set for this repo — part of the shared taxonomy.
+# See dev-playbook/repo-setup/patterns/01-github-labels.md
+#
+# This file is the source of truth: change it here, then run
+#   sync-labels.sh Oaklight/vestigio .github/labels.yml
+# Never rename a label by deleting and recreating it — that strips the
+# label from every issue. Use: gh label edit <old> --name <new>
 
-# === Type labels ===
-- name: bug
-  color: "d73a4a"
+# === Primary type labels — at most one per issue ===
+- name: "bug"
+  color: "CF222E"
   description: "Something isn't working"
-
-- name: enhancement
-  color: "a2eeef"
+- name: "enhancement"
+  color: "1A7F37"
   description: "New feature or request"
-
-- name: documentation
-  color: "0075ca"
+- name: "documentation"
+  color: "0969DA"
   description: "Improvements or additions to documentation"
-
-- name: refactor
-  color: "f59e0b"
+- name: "refactor"
+  color: "57606A"
   description: "Code refactoring, no behavior change"
-
-- name: performance
-  color: "ff6600"
-  description: "Performance optimization"
-
-- name: architecture
-  color: "5319e7"
-  description: "Architectural improvements"
-
-- name: research
-  color: "d4c5f9"
-  description: "Investigation, specification research"
-
-- name: security
-  color: "e11d48"
-  description: "Security vulnerability"
-
-- name: discussion
-  color: "c084fc"
+- name: "discussion"
+  color: "BF3989"
   description: "Design discussion, RFC"
 
-# === Priority labels ===
+# === Epic — tracking parent; never combined with enhancement ===
+- name: "epic"
+  color: "6F42C1"
+  description: "Tracking epic: parent issue for a multi-issue workstream"
+
+# === Qualifier labels — optional; coexist with the primary type, may stand alone ===
+- name: "security"
+  color: "6E0B14"
+  description: "Security vulnerability"
+- name: "performance"
+  color: "BC4C00"
+  description: "Performance optimization"
+- name: "architecture"
+  color: "4C2889"
+  description: "Architectural improvements"
+- name: "research"
+  color: "0F766E"
+  description: "Investigation, specification research"
+
+# === Priority labels — at most one per issue ===
 - name: "priority:critical"
-  color: "b91c1c"
+  color: "7F1D1D"
   description: "Security/data-loss, fix immediately"
-
 - name: "priority:high"
-  color: "dc2626"
+  color: "B91C1C"
   description: "Blocks other work"
-
 - name: "priority:medium"
-  color: "f97316"
+  color: "C2410C"
   description: "Should fix soon"
-
 - name: "priority:low"
-  color: "fca5a5"
+  color: "A16207"
   description: "Nice to have"
 
-# === Area labels (vestigio-specific) ===
+# === Area labels — which component ===
 - name: "area:core"
-  color: "0891b2"
+  color: "2F6B4F"
   description: "Core library — config, provider, spans, noop stubs"
-
 - name: "area:infra"
-  color: "0075ca"
+  color: "1F6B76"
   description: "CI, build, packaging, release"
